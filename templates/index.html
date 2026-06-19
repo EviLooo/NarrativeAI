@@ -428,14 +428,12 @@ The database logs will show how the Spoiler Shield dynamically locks the LLM's c
 
     <script>
         const slider = document.getElementById('time-slider');
-        const timer = document.getElementById('video-timer');
         const timeBadge = document.getElementById('current-time-badge');
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('send-btn');
         const chatMessages = document.getElementById('chat-messages');
         const consoleOutput = document.getElementById('console-output');
         const suggestedContainer = document.getElementById('suggested-questions-container');
-        const actualPlayer = document.getElementById('actual-player');
         const actualPlayer = document.getElementById('actual-player');
         const syncOffsetInput = document.getElementById('sync-offset');
 
@@ -459,7 +457,6 @@ The database logs will show how the Spoiler Shield dynamically locks the LLM's c
 
         function updateTimer() {
             const formatted = formatSeconds(slider.value);
-            timer.innerText = formatted;
             timeBadge.innerText = formatted;
             updateSuggestions();
         }
