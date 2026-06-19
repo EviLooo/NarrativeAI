@@ -363,13 +363,7 @@
         <!-- Video & Controls -->
         <div class="video-panel">
             <div class="mock-player" id="video-container" style="background: #000;">
-                <video id="actual-player" controls style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
-                <div class="player-visualizer" id="mock-visualizer">
-                    <h2 id="video-title">Mr. Robot Pilot</h2>
-                    <p id="video-timer">00:00</p>
-                    <label for="video-upload" class="suggested-btn" style="display: inline-block; margin-top: 15px; font-family: inherit;">Load Video File</label>
-                    <input type="file" id="video-upload" accept="video/*" style="display: none;">
-                </div>
+                <video id="actual-player" src="/media/S01_E01_helllofriend.mp4" controls style="width: 100%; height: 100%; object-fit: contain;"></video>
             </div>
 
             <div class="video-controls">
@@ -442,8 +436,7 @@ The database logs will show how the Spoiler Shield dynamically locks the LLM's c
         const consoleOutput = document.getElementById('console-output');
         const suggestedContainer = document.getElementById('suggested-questions-container');
         const actualPlayer = document.getElementById('actual-player');
-        const mockVisualizer = document.getElementById('mock-visualizer');
-        const videoUpload = document.getElementById('video-upload');
+        const actualPlayer = document.getElementById('actual-player');
         const syncOffsetInput = document.getElementById('sync-offset');
 
         // Questions linked to timestamps to show off the Spoiler Shield
@@ -498,20 +491,10 @@ The database logs will show how the Spoiler Shield dynamically locks the LLM's c
         };
         updateTimer();
 
-        videoUpload.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const url = URL.createObjectURL(file);
-                actualPlayer.src = url;
-                actualPlayer.style.display = 'block';
-                mockVisualizer.style.display = 'none';
-                
-                // When video loads, update max on slider
-                actualPlayer.onloadedmetadata = () => {
-                    slider.max = Math.floor(actualPlayer.duration);
-                };
-            }
-        });
+        // When video loads, update max on slider
+        actualPlayer.onloadedmetadata = () => {
+            slider.max = Math.floor(actualPlayer.duration);
+        };
 
         actualPlayer.addEventListener('timeupdate', () => {
             slider.value = actualPlayer.currentTime;
