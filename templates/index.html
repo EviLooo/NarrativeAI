@@ -354,10 +354,25 @@
     <header>
         <h1><span>NARRATIVE</span> companion</h1>
         <div style="display: flex; gap: 10px; align-items: center;">
-            <div class="badge">S1 E1: hellofriend</div>
+            <div class="badge" id="episode-badge">S1 E1: hellofriend</div>
             <div class="badge" style="border-color: var(--safe); color: var(--safe); background: rgba(57, 255, 20, 0.15)">Spoiler Shield Active</div>
+            <button id="upload-toggle-btn" onclick="toggleUploadPanel()" style="background: rgba(0,240,255,0.1); border: 1px solid var(--primary); color: var(--primary); padding: 4px 12px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; cursor: pointer; font-family: 'Fira Code', monospace;">⬆ LOAD NEW CONTENT</button>
         </div>
     </header>
+
+    <!-- Upload Panel -->
+    <div id="upload-panel" style="display:none; background: var(--bg-surface); border-bottom: 1px solid var(--border); padding: 1rem 2rem; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:0.75rem; color:var(--text-muted); font-family:'Fira Code',monospace;">VIDEO FILE (.mp4)</label>
+            <input type="file" id="video-file-input" accept="video/*" style="background:var(--bg-surface-elevated); border:1px solid var(--border); color:var(--text-main); padding:6px 10px; border-radius:6px; font-family:inherit; font-size:0.85rem;">
+        </div>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+            <label style="font-size:0.75rem; color:var(--text-muted); font-family:'Fira Code',monospace;">SUBTITLE FILE (.srt)</label>
+            <input type="file" id="subtitle-file-input" accept=".srt" style="background:var(--bg-surface-elevated); border:1px solid var(--border); color:var(--text-main); padding:6px 10px; border-radius:6px; font-family:inherit; font-size:0.85rem;">
+        </div>
+        <button id="upload-submit-btn" onclick="submitUpload()" style="background:var(--primary); color:#000; border:none; padding:8px 20px; border-radius:6px; font-weight:700; cursor:pointer; font-family:inherit;">UPLOAD &amp; INGEST</button>
+        <div id="upload-status-msg" style="font-size:0.8rem; color:var(--text-muted); font-family:'Fira Code',monospace;"></div>
+    </div>
 
     <div class="app-container">
         <!-- Video & Controls -->
@@ -402,7 +417,7 @@ The database logs will show how the Spoiler Shield dynamically locks the LLM's c
         <!-- Chat Panel -->
         <div class="chat-panel">
             <div class="chat-header">
-                <h3>Narrative Assistant</h3>
+                <h3>Narrative Companion</h3>
                 <span style="font-size: 0.8rem; color: var(--text-muted);">watsonx.ai Llama 3.1</span>
             </div>
 
@@ -553,6 +568,78 @@ The database logs will show how the Spoiler Shield dynamically locks the LLM's c
         chatInput.onkeypress = (e) => {
             if (e.key === 'Enter') sendMessage();
         };
+
+        // ── Upload Panel Logic ──────────────────────────────
+        function toggleUploadPanel() {
+            const panel = document.getElementById('upload-panel');
+            panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+        }
+
+        let statusPoller = null;
+
+        async function submitUpload() {
+            const videoFile = document.getElementById('video-file-input').files[0];
+            const subtitleFile = document.getElementById('subtitle-file-input').files[0];
+            const statusMsg = document.getElementById('upload-status-msg');
+            const submitBtn = document.getElementById('upload-submit-btn');
+
+            if (!videoFile || !subtitleFile) {
+                statusMsg.style.color = 'var(--warning)';
+                statusMsg.innerText = 'Please select both a video file and a subtitle (.srt) file.';
+                return;
+            }
+
+            submitBtn.disabled = true;
+            statusMsg.style.color = 'var(--primary)';
+            statusMsg.innerText = 'Uploading files...';
+
+            const formData = new FormData();
+            formData.append('video', videoFile);
+            formData.append('subtitle', subtitleFile);
+
+            try {
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (!data.success) {
+                    statusMsg.style.color = 'var(--warning)';
+                    statusMsg.innerText = data.message;
+                    submitBtn.disabled = false;
+                    return;
+                }
+
+                statusMsg.innerText = data.message;
+
+                // Update video player immediately with the uploaded file
+                actualPlayer.src = `/media/${data.video_filename}`;
+                actualPlayer.load();
+                document.getElementById('episode-badge').innerText = videoFile.name.replace(/_/g,' ').replace('.mp4','');
+
+                // Poll ingestion status every 5 seconds
+                statusPoller = setInterval(async () => {
+                    const statusRes = await fetch('/api/upload-status');
+                    const statusData = await statusRes.json();
+                    statusMsg.innerText = statusData.message;
+
+                    if (statusData.state === 'done') {
+                        clearInterval(statusPoller);
+                        statusMsg.style.color = 'var(--safe)';
+                        submitBtn.disabled = false;
+                        // Close panel after success
+                        setTimeout(() => { document.getElementById('upload-panel').style.display = 'none'; }, 3000);
+                    } else if (statusData.state === 'error') {
+                        clearInterval(statusPoller);
+                        statusMsg.style.color = 'var(--warning)';
+                        submitBtn.disabled = false;
+                    }
+                }, 5000);
+
+            } catch (err) {
+                statusMsg.style.color = 'var(--warning)';
+                statusMsg.innerText = 'Upload failed. Is the server running?';
+                submitBtn.disabled = false;
+            }
+        }
     </script>
 </body>
 </html>

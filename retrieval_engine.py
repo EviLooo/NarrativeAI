@@ -222,6 +222,78 @@ def get_rag_context(user_query, user_pause_time_sec):
         "intent": intent
     }
 
+# ─────────────────────────────────────────────
+# AGENT TOOL FUNCTIONS
+# These are the three tools exposed to Llama 3.1 for function calling.
+# The agent decides autonomously which one to call based on the user's question.
+# ─────────────────────────────────────────────
+
+def tool_search_dialogue(query: str, timestamp: float) -> str:
+    """Tool 1: Semantic search — finds specific dialogue chunks matching a question."""
+    safe_chunks = retrieve_safe_chunks(timestamp)
+    if not safe_chunks:
+        return "No watched dialogue available yet."
+
+    embeddings_client = get_watsonx_embeddings()
+    try:
+        query_embedding = embeddings_client.embed_documents([query])[0]
+    except Exception as e:
+        return f"Embedding error: {e}"
+
+    query_lower = query.lower()
+    scored = []
+    for chunk in safe_chunks:
+        score = calculate_relevance_score(
+            query_embedding,
+            chunk.get('embedding', []),
+            query_lower,
+            chunk.get('entities', [])
+        )
+        scored.append((score, chunk))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    results = [c for s, c in scored if s >= 60.0]
+
+    if not results:
+        return "No relevant dialogue found above the confidence threshold."
+
+    results.sort(key=lambda x: x['start_time_sec'])
+    lines = [f"[Minute {c['start_time_sec']//60}]: {c['text']}" for c in results]
+    return "\n".join(lines)
+
+
+def tool_get_full_summary(timestamp: float) -> str:
+    """Tool 2: Returns all watched dialogue in chronological order for recap/summary requests."""
+    safe_chunks = retrieve_safe_chunks(timestamp)
+    if not safe_chunks:
+        return "No watched dialogue available yet."
+
+    safe_chunks.sort(key=lambda x: x['start_time_sec'])
+    lines = [f"[Minute {c['start_time_sec']//60}]: {c['text']}" for c in safe_chunks if c.get('text')]
+    return "\n".join(lines)
+
+
+def tool_get_character_profile(character_name: str, timestamp: float) -> str:
+    """Tool 3: Retrieves all dialogue chunks that mention a specific character by name."""
+    safe_chunks = retrieve_safe_chunks(timestamp)
+    if not safe_chunks:
+        return "No watched dialogue available yet."
+
+    name_lower = character_name.lower()
+    matches = [
+        c for c in safe_chunks
+        if name_lower in c.get('text', '').lower()
+        or any(name_lower in e.lower() for e in c.get('entities', []))
+    ]
+
+    if not matches:
+        return f"No dialogue mentioning '{character_name}' found in watched content."
+
+    matches.sort(key=lambda x: x['start_time_sec'])
+    lines = [f"[Minute {c['start_time_sec']//60}]: {c['text']}" for c in matches]
+    return "\n".join(lines)
+
+
 if __name__ == "__main__":
     # Test connection and local scoring logic
     print("Testing Retrieval Engine...")

@@ -105,7 +105,7 @@ def extract_entities_nlu(text, nlu_client):
         print(f"[NLU Warning] Failed to analyze text chunk: {e}")
         return []
 
-def upload_to_cloudant(documents):
+def upload_to_cloudant(documents, db_name=DATABASE_NAME):
     """Uploads enriched documents to Cloudant."""
     print("Connecting to Cloudant...")
     cloudant_key = os.getenv("CLOUDANT_API_KEY")
@@ -146,14 +146,20 @@ def upload_to_cloudant(documents):
             
     print(f"Successfully uploaded {success_count}/{len(documents)} documents to Cloudant.")
 
-def main():
+def main(subtitle_file=None, db_name=None):
+    # Allow dynamic override from the upload API; fall back to defaults
+    if subtitle_file is None:
+        subtitle_file = SUBTITLE_FILE
+    if db_name is None:
+        db_name = DATABASE_NAME
+
     # 1. Initialize Watson NLU Client
     nlu_key = os.getenv("NLU_API_KEY")
     nlu_url = os.getenv("NLU_URL")
     
     if not nlu_key or not nlu_url:
         print("[FAIL] Watson NLU credentials missing in .env")
-        return
+        return False
         
     nlu_authenticator = IAMAuthenticator(nlu_key)
     nlu_client = NaturalLanguageUnderstandingV1(
@@ -164,10 +170,11 @@ def main():
     
     # 2. Parse Subtitles
     try:
-        subtitles = parse_srt(SUBTITLE_FILE)
+        subtitles = parse_srt(subtitle_file)
     except Exception as e:
         print(f"[FAIL] Error parsing SRT file: {e}")
-        return
+        return False
+
         
     # 3. Group by minute
     grouped_chunks = group_subtitles_by_minute(subtitles)
@@ -235,10 +242,12 @@ def main():
 
     # 5. Upload to Cloudant
     try:
-        upload_to_cloudant(documents)
+        upload_to_cloudant(documents, db_name=db_name)
         print("Ingestion pipeline completed successfully!")
+        return True
     except Exception as e:
         print(f"[FAIL] Cloudant upload failed: {e}")
+        return False
 
 if __name__ == "__main__":
     main()
