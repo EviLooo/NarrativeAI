@@ -491,10 +491,14 @@ The database logs will show how the Spoiler Shield dynamically locks the LLM's c
         };
         updateTimer();
 
-        // When video loads, update max on slider
-        actualPlayer.onloadedmetadata = () => {
-            slider.max = Math.floor(actualPlayer.duration);
+        // Update max on slider (check if already loaded, otherwise wait for event)
+        const updateSliderMax = () => {
+            if (actualPlayer.duration) {
+                slider.max = Math.floor(actualPlayer.duration);
+            }
         };
+        actualPlayer.onloadedmetadata = updateSliderMax;
+        updateSliderMax(); // Run immediately in case it loaded from cache
 
         actualPlayer.addEventListener('timeupdate', () => {
             slider.value = actualPlayer.currentTime;

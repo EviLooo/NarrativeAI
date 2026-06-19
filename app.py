@@ -16,9 +16,8 @@ async def read_index(request: Request):
     """Serves the main single-page application UI."""
     return templates.TemplateResponse(request, "index.html", {})
 
-@app.get("/media/S01_E01_helllofriend.mp4")
-async def get_video():
-    return FileResponse("S01_E01_helllofriend.mp4", media_type="video/mp4")
+# Use StaticFiles for media to support HTTP Range requests (crucial for video seeking!)
+app.mount("/media", StaticFiles(directory="."), name="media")
 
 @app.get("/api/ask")
 async def ask_question(q: str, timestamp: float):
