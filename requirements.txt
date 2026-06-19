@@ -1,0 +1,9 @@
+ibm-watsonx-ai
+ibmcloudant
+ibm-watson
+python-dotenv
+fastapi
+uvicorn
+jinja2
+requests
+numpy

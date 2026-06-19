@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Narrative Continuity Companion</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #0a0b0d;
+            --bg-surface: #12141c;
+            --bg-surface-elevated: #1e2230;
+            --primary: #00f0ff;
+            --secondary: #ff007f;
+            --text-main: #f0f2f5;
+            --text-muted: #8e9cae;
+            --border: #262b3d;
+            --safe: #39ff14;
+            --warning: #ff3131;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        header h1 span {
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+
+        .badge {
+            background: rgba(255, 0, 127, 0.15);
+            border: 1px solid var(--secondary);
+            color: var(--secondary);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            text-transform: uppercase;
+        }
+
+        .app-container {
+            display: flex;
+            flex: 1;
+            height: calc(100vh - 65px);
+            overflow: hidden;
+        }
+
+        /* Video / Control Panel */
+        .video-panel {
+            flex: 1.2;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            border-right: 1px solid var(--border);
+            overflow-y: auto;
+            background: linear-gradient(135deg, #0d0f17 0%, #06070a 100%);
+        }
+
+        .mock-player {
+            aspect-ratio: 16/9;
+            background-color: #000;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mock-player::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.8) 100%);
+            pointer-events: none;
+        }
+
+        .player-visualizer {
+            text-align: center;
+            z-index: 1;
+        }
+
+        .player-visualizer h2 {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .player-visualizer p {
+            font-family: 'Fira Code', monospace;
+            color: var(--primary);
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+
+        .video-controls {
+            background-color: var(--bg-surface);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .time-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .current-time {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .slider-container {
+            width: 100%;
+            position: relative;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--border);
+            outline: none;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+            transition: transform 0.1s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        /* Chat Panel */
+        .chat-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--bg-surface);
+        }
+
+        .chat-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h3 {
+            font-weight: 600;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            max-width: 85%;
+            padding: 1rem;
+            border-radius: 12px;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            background-color: var(--bg-surface-elevated);
+            color: var(--text-main);
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .message.ai {
+            background-color: rgba(0, 240, 255, 0.05);
+            color: var(--text-main);
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+            border: 1px solid rgba(0, 240, 255, 0.2);
+        }
+
+        .message.ai.spoiler {
+            background-color: rgba(255, 49, 49, 0.05);
+            border: 1px solid rgba(255, 49, 49, 0.3);
+            color: #ffb3b3;
+        }
+
+        .chat-input-container {
+            padding: 1.5rem;
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .chat-input {
+            flex: 1;
+            background-color: var(--bg-surface-elevated);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            outline: none;
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: border-color 0.3s;
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary);
+        }
+
+        .send-btn {
+            background-color: var(--primary);
+            color: #000;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+
+        .send-btn:hover {
+            opacity: 0.9;
+        }
+
+        .send-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Dev Console / Log Panel */
+        .dev-console {
+            background-color: #0d0f18;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            flex: 2;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .console-header {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .console-body {
+            flex: 1;
+            overflow-y: auto;
+            color: var(--safe);
+            white-space: pre-wrap;
+            line-height: 1.4;
+        }
+
+        .suggested-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .suggested-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .suggested-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1><span>NARRATIVE</span> companion</h1>
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <div class="badge">S1 E1: hellofriend</div>
+            <div class="badge" style="border-color: var(--safe); color: var(--safe); background: rgba(57, 255, 20, 0.15)">Spoiler Shield Active</div>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Video & Controls -->
+        <div class="video-panel">
+            <div class="mock-player" id="video-container" style="background: #000;">
+                <video id="actual-player" controls style="display: none; width: 100%; height: 100%; object-fit: contain;"></video>
+                <div class="player-visualizer" id="mock-visualizer">
+                    <h2 id="video-title">Mr. Robot Pilot</h2>
+                    <p id="video-timer">00:00</p>
+                    <label for="video-upload" class="suggested-btn" style="display: inline-block; margin-top: 15px; font-family: inherit;">Load Video File</label>
+                    <input type="file" id="video-upload" accept="video/*" style="display: none;">
+                </div>
+            </div>
+
+            <div class="video-controls">
+                <div class="time-header">
+                    <span>PLAYBACK POSITION</span>
+                    <span class="current-time" id="current-time-badge">00:00</span>
+                </div>
+                <div class="slider-container">
+                    <input type="range" id="time-slider" min="0" max="3840" value="0" step="5">
+                </div>
+                <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.8rem;">
+                    <span>00:00</span>
+                    <span>Max Watched Position (64:00)</span>
+                </div>
+                <div style="margin-top: 10px; display: flex; align-items: center; justify-content: space-between; font-size: 0.8rem; border-top: 1px solid var(--border); padding-top: 10px;">
+                    <label for="sync-offset" style="color: var(--text-muted);" title="If subtitles are behind the video, use a negative number.">Subtitle Sync Offset (sec):</label>
+                    <input type="number" id="sync-offset" value="-6" style="width: 60px; background: var(--bg-surface-elevated); color: var(--text-main); border: 1px solid var(--border); padding: 4px 8px; border-radius: 4px; font-family: inherit;">
+                </div>
+            </div>
+
+            <!-- Dev Console showing the Spoiler Shield working -->
+            <div class="dev-console">
+                <div class="console-header">
+                    <span>SPOILER SHIELD CONTEXT MONITOR (DATABASE RETRIEVAL)</span>
+                    <span style="color: var(--secondary);">LIVE DB FILTER</span>
+                </div>
+                <div class="console-body" id="console-output">
+[System initialized]
+Move the slider above to watch the episode. 
+Ask questions in the side panel. 
+The database logs will show how the Spoiler Shield dynamically locks the LLM's context.
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Panel -->
+        <div class="chat-panel">
+            <div class="chat-header">
+                <h3>Narrative Assistant</h3>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">watsonx.ai Llama 3.1</span>
+            </div>
+
+            <div class="chat-messages" id="chat-messages">
+                <div class="message ai">
+                    Hello! I'm your Narrative Continuity Companion. As you watch, feel free to ask me questions about characters, plot points, or details you might have missed. I will guarantee that my answers contain <strong>no spoilers</strong> beyond where you are paused!
+                </div>
+            </div>
+
+            <div style="padding: 0 1.5rem;">
+                <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px;">SUGGESTED QUESTIONS FOR CURRENT POSITION:</p>
+                <div class="suggested-questions" id="suggested-questions-container">
+                    <!-- Dynamic suggested buttons -->
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <input type="text" class="chat-input" id="chat-input" placeholder="Ask a question about the show..." autocomplete="off">
+                <button class="send-btn" id="send-btn">SEND</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const slider = document.getElementById('time-slider');
+        const timer = document.getElementById('video-timer');
+        const timeBadge = document.getElementById('current-time-badge');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const chatMessages = document.getElementById('chat-messages');
+        const consoleOutput = document.getElementById('console-output');
+        const suggestedContainer = document.getElementById('suggested-questions-container');
+        const actualPlayer = document.getElementById('actual-player');
+        const mockVisualizer = document.getElementById('mock-visualizer');
+        const videoUpload = document.getElementById('video-upload');
+        const syncOffsetInput = document.getElementById('sync-offset');
+
+        // Questions linked to timestamps to show off the Spoiler Shield
+        const timelineSuggestions = [
+            { time: 0, text: "What is Elliot's job?", timeStr: "00:00" },
+            { time: 30, text: "Who is the top 1%?", timeStr: "00:30" },
+            { time: 100, text: "Where is Elliot right now?", timeStr: "01:40" },
+            { time: 130, text: "What did Elliot find out about Rohit?", timeStr: "02:10" },
+            { time: 170, text: "Who is Angela?", timeStr: "02:50" },
+            { time: 230, text: "What is Evil Corp?", timeStr: "03:50" },
+            { time: 270, text: "Who is Mr. Robot?", timeStr: "04:30" },
+            { time: 320, text: "What is fsociety?", timeStr: "05:20" }
+        ];
+
+        function formatSeconds(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function updateTimer() {
+            const formatted = formatSeconds(slider.value);
+            timer.innerText = formatted;
+            timeBadge.innerText = formatted;
+            updateSuggestions();
+        }
+
+        function updateSuggestions() {
+            suggestedContainer.innerHTML = '';
+            const currentSeconds = parseInt(slider.value);
+            
+            // Show suggestions up to 2 minutes ahead so user can test "spoiling" themselves
+            const available = timelineSuggestions.filter(s => s.time <= currentSeconds + 120);
+            
+            available.slice(-4).forEach(s => {
+                const btn = document.createElement('button');
+                btn.className = 'suggested-btn';
+                btn.innerText = s.text;
+                btn.onclick = () => {
+                    chatInput.value = s.text;
+                    sendMessage();
+                };
+                suggestedContainer.appendChild(btn);
+            });
+        }
+
+        slider.oninput = () => {
+            if (actualPlayer.src) {
+                actualPlayer.currentTime = slider.value;
+            }
+            updateTimer();
+        };
+        updateTimer();
+
+        videoUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                actualPlayer.src = url;
+                actualPlayer.style.display = 'block';
+                mockVisualizer.style.display = 'none';
+                
+                // When video loads, update max on slider
+                actualPlayer.onloadedmetadata = () => {
+                    slider.max = Math.floor(actualPlayer.duration);
+                };
+            }
+        });
+
+        actualPlayer.addEventListener('timeupdate', () => {
+            slider.value = actualPlayer.currentTime;
+            updateTimer();
+        });
+
+        function addMessage(text, sender, isSpoiler = false) {
+            const msg = document.createElement('div');
+            msg.className = `message ${sender} ${isSpoiler ? 'spoiler' : ''}`;
+            msg.innerHTML = text;
+            chatMessages.appendChild(msg);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function sendMessage() {
+            const query = chatInput.value.trim();
+            if (!query) return;
+
+            addMessage(query, 'user');
+            chatInput.value = '';
+
+            const currentSeconds = parseInt(slider.value);
+            const offset = parseInt(syncOffsetInput.value) || 0;
+            const syncedSeconds = Math.max(0, currentSeconds + offset);
+            
+            // Show typing indicator
+            const typingMsg = document.createElement('div');
+            typingMsg.className = 'message ai';
+            typingMsg.innerText = 'Analyzing timeline context...';
+            chatMessages.appendChild(typingMsg);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            // Call API
+            fetch(`/api/ask?q=${encodeURIComponent(query)}&timestamp=${syncedSeconds}`)
+                .then(res => res.json())
+                .then(data => {
+                    chatMessages.removeChild(typingMsg);
+                    
+                    // Detect if model refused (meaning it blocked a spoiler)
+                    const isSpoilerRefusal = data.answer.includes("haven't seen that yet");
+                    addMessage(data.answer, 'ai', isSpoilerRefusal);
+                    
+                    // Update developer console log
+                    consoleOutput.innerText = `[Query: "${query}"]\n[Video Time: ${formatSeconds(currentSeconds)} | Synced Subtitle Time: ${formatSeconds(syncedSeconds)}]\n\n${data.context}`;
+                    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+                })
+                .catch(err => {
+                    chatMessages.removeChild(typingMsg);
+                    addMessage("Sorry, I encountered an error connecting to watsonx.ai.", 'ai');
+                    console.error(err);
+                });
+        }
+
+        sendBtn.onclick = sendMessage;
+        chatInput.onkeypress = (e) => {
+            if (e.key === 'Enter') sendMessage();
+        };
+    </script>
+</body>
+</html>
