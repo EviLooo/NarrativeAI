@@ -17,7 +17,7 @@ An AI-powered video companion that prevents spoilers while you watch shows. It u
 1. Clone the repository.
 2. Create a virtual environment: `python -m venv venv`
 3. Install dependencies: `pip install -r requirements.txt`
-4. Set up your `.env` file with your IBM credentials (`IBM_CLOUD_API_KEY`, `CLOUDANT_URL`, etc).
+4. Set up your `.env` file with your IBM credentials (`IBM_CLOUD_API_KEY`, `WATSONX_PROJECT_ID`, `WATSONX_URL`, `CLOUDANT_API_KEY`, `CLOUDANT_URL`, `NLU_API_KEY`, and `NLU_URL`).
 5. Run the data ingestion script (only needed once to populate Cloudant): `python data_parser.py`
 6. Start the server: `uvicorn app:app --host 0.0.0.0 --port 8000 --reload`
 7. Open `http://localhost:8000` in your browser.
